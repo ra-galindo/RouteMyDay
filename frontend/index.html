@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>RouteMyDay – Optimal City Route Planner</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+</head>
+
+<body>
+<div id="app" class="app">
+
+  <h1>RouteMyDay</h1>
+  <p style="color:#b7c2ce; margin-top:6px;">
+    I had one day in Prague and twelve places I wanted to see.
+    Google Maps only lets you add eight stops.
+    RouteMyDay finds the optimal route and best order to visit everything.
+  </p>
+
+  <div class="card">
+
+    <h2>Add places</h2>
+
+    <div v-for="(p,i) in places" :key="i" style="display:flex; gap:8px; margin-top:8px;">
+      <input v-model="p.name" placeholder="Place name" />
+      <input v-model.number="p.lat" placeholder="Latitude" />
+      <input v-model.number="p.lng" placeholder="Longitude" />
+      <button class="secondary" @click="remove(i)">✕</button>
+    </div>
+
+    <button style="margin-top:10px;" @click="add">+ Add place</button>
+
+    <div style="margin-top:12px;">
+      <label><input type="checkbox" v-model="fixedEnd" /> End at final stop</label>
+    </div>
+
+    <div style="margin-top:10px;">
+      Backend API:
+      <input v-model="api" placeholder="http://localhost:8000" style="width:260px;" />
+    </div>
+
+    <button style="margin-top:14px;" @click="optimize">Optimize Route</button>
+
+    <div style="margin-top:10px; min-height:22px;">{{ status }}</div>
+
+    <div v-if="result">
+      <h3>Optimal visiting order</h3>
+      <ol>
+        <li v-for="i in result.order">
+          {{ places[i].name }}
+        </li>
+      </ol>
+
+      <p>Total distance: {{ result.total_distance_km }} km</p>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
