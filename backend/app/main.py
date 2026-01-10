@@ -1,29 +1,30 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException
 from .schemas import OptimizeRequest, OptimizeResponse
-from .maps import build_distance_matrix
-from .optimizer import tsp_distance
+from .optimizer import optimize_route
+from .maps import get_distance_matrix
 
 app = FastAPI(title="RouteMyDay API")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 
 @app.post("/optimize", response_model=OptimizeResponse)
-def optimize(req: OptimizeRequest):
-    matrix = build_distance_matrix(req.places)
-    order, total_km = tsp_distance(matrix, req.fixed_end)
+async def optimize(request: OptimizeRequest):
+    places = request.places
+
+    if len(places) < 2:
+        raise HTTPException(status_code=400, detail="At least two places are required")
+
+    # get distance matrix via Google Maps
+    distance_matrix = await get_distance_matrix(places)
+
+    # optimize route
+    order, total_distance = optimize_route(distance_matrix, round_trip=request.round_trip)
 
     return OptimizeResponse(
         order=order,
-        total_distance_km=round(total_km, 2)
+        total_distance_km=round(total_distance / 1000, 2)
     )
-
-@app.get("/ping")
-def ping():
-    return {"status": "ok"}
