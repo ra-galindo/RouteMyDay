@@ -1,63 +1,168 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RouteMyDay – Optimal City Route Planner</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 </head>
-
 <body>
 <div id="app" class="app">
 
-  <h1>RouteMyDay</h1>
-  <p style="color:#b7c2ce; margin-top:6px;">
-    I had one day in Prague and twelve places I wanted to see.
-    Google Maps only lets you add eight stops.
-    RouteMyDay finds the optimal route and best order to visit everything.
-  </p>
+  <header class="header">
+    <div class="logo">
+      <span class="logo-icon">◈</span>
+      <span class="logo-text">RouteMyDay</span>
+    </div>
+    <p class="tagline">Enter your stops and we'll calculate the best order to visit them all.</p>
+  </header>
 
+  <!-- Input Card -->
   <div class="card">
-
-    <h2>Add places</h2>
-
-    <div v-for="(p,i) in places" :key="i" style="display:flex; gap:8px; margin-top:8px;">
-      <input v-model="p.name" placeholder="Place name" />
-      <input v-model.number="p.lat" placeholder="Latitude" />
-      <input v-model.number="p.lng" placeholder="Longitude" />
-      <button class="secondary" @click="remove(i)">✕</button>
+    <div class="card-header">
+      <h2>Your Stops</h2>
+      <span class="stop-count">{{ places.length }} stop{{ places.length !== 1 ? 's' : '' }}</span>
     </div>
 
-    <button style="margin-top:10px;" @click="add">+ Add place</button>
-
-    <div style="margin-top:12px;">
-      <label><input type="checkbox" v-model="fixedEnd" /> End at final stop</label>
+    <div class="stops-list">
+      <div
+        v-for="(p, i) in places"
+        :key="i"
+        class="stop-row"
+        :class="{
+          'stop-pinned-start': fixedStart && i === 0,
+          'stop-pinned-end': fixedEnd && i === places.length - 1,
+          'is-dragging': dragIndex === i
+        }"
+        draggable="true"
+        @dragstart="dragStart(i)"
+        @dragover.prevent="dragOver(i)"
+        @drop.prevent
+        @dragend="dragEnd"
+      >
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <div class="stop-badge">{{ i + 1 }}</div>
+        <input
+          v-model="p.name"
+          class="stop-input"
+          draggable="false"
+          :placeholder="i === 0 ? 'e.g. Prague Castle, Czech Republic' : 'Enter a place or address'"
+        />
+        <span v-if="fixedStart && i === 0" class="pin-badge pin-start">START</span>
+        <span v-if="fixedEnd && i === places.length - 1" class="pin-badge pin-end">END</span>
+        <button
+          class="btn-remove"
+          @click="remove(i)"
+          :disabled="places.length <= 2"
+          title="Remove stop"
+        >✕</button>
+      </div>
     </div>
 
-    <div style="margin-top:10px;">
-      Backend API:
-      <input v-model="api" placeholder="https://routemyday.onrender.com" style="width:260px;" />
+    <button class="btn-add" @click="add" :disabled="places.length >= 15">
+      + Add Another Stop
+    </button>
+
+    <!-- Route Options -->
+    <div class="options-section">
+      <p class="options-title">Route Options</p>
+
+      <label class="toggle-label">
+        <input type="checkbox" class="toggle-input" v-model="fixedStart" />
+        <span class="toggle-track"></span>
+        <div class="option-text">
+          <span class="option-name">Fix starting point</span>
+          <span class="option-desc">Always begin the route from stop #1</span>
+        </div>
+      </label>
+
+      <label class="toggle-label" style="margin-top: 14px;">
+        <input type="checkbox" class="toggle-input" v-model="fixedEnd" />
+        <span class="toggle-track"></span>
+        <div class="option-text">
+          <span class="option-name">Fix ending point</span>
+          <span class="option-desc">Always finish the route at the last stop listed</span>
+        </div>
+      </label>
     </div>
 
-    <button style="margin-top:14px;" @click="optimize">Optimize Route</button>
+    <button
+      class="btn-optimize"
+      @click="optimize"
+      :disabled="loading || validPlaceCount < 2"
+    >
+      <span v-if="loading" class="spinner"></span>
+      <span v-else>⚡ Optimize My Route</span>
+    </button>
 
-    <div style="margin-top:10px; min-height:22px;">{{ status }}</div>
-
-    <div v-if="result">
-      <h3>Optimal visiting order</h3>
-      <ol>
-        <li v-for="i in result.order">
-          {{ places[i].name }}
-        </li>
-      </ol>
-
-      <p>Total distance: {{ result.total_distance_km }} km</p>
-    </div>
-
+    <div v-if="errorMsg" class="error-msg">{{ errorMsg }}</div>
   </div>
 
-</div>
+  <!-- Results Card -->
+  <transition name="slide-up">
+    <div v-if="result" class="card result-card">
+      <div class="card-header">
+        <h2>Optimized Route</h2>
+        <button class="btn-clear" @click="result = null">Clear</button>
+      </div>
 
+      <!-- Summary bar -->
+      <div class="summary-bar">
+        <div class="summary-item">
+          <span class="summary-icon">↔</span>
+          <div>
+            <div class="summary-value">{{ result.total_distance_km }} km</div>
+            <div class="summary-label">Total distance</div>
+          </div>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+          <span class="summary-icon">◷</span>
+          <div>
+            <div class="summary-value">~{{ estimatedTime }}</div>
+            <div class="summary-label">Est. travel time</div>
+          </div>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+          <span class="summary-icon">◎</span>
+          <div>
+            <div class="summary-value">{{ orderedPlaces.length }}</div>
+            <div class="summary-label">Stops</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ordered stop list -->
+      <div class="route-list">
+        <div v-for="(place, step) in orderedPlaces" :key="step" class="route-step">
+          <div class="step-connector">
+            <div
+              class="step-dot"
+              :class="{
+                'dot-start': step === 0,
+                'dot-end': step === orderedPlaces.length - 1 && orderedPlaces.length > 1
+              }"
+            ></div>
+            <div v-if="step < orderedPlaces.length - 1" class="step-line"></div>
+          </div>
+          <div class="step-content">
+            <div class="step-card">
+              <span class="step-num">{{ step + 1 }}</span>
+              <span class="step-name">{{ place }}</span>
+              <span v-if="step === 0" class="step-badge badge-start">Start</span>
+              <span v-else-if="step === orderedPlaces.length - 1" class="step-badge badge-end">End</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="time-note">* Travel time estimated at 25 km/h average city speed.</p>
+    </div>
+  </transition>
+
+</div>
 <script src="app.js"></script>
 </body>
 </html>
