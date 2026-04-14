@@ -29,7 +29,7 @@ createApp({
 
     estimatedTime() {
       if (!this.result) return "";
-      const minutes = Math.round(this.result.total_distance_km / 25 * 60);
+      const minutes = Math.round(this.result.total_duration_min);
       if (minutes < 60) return `${minutes} min`;
       const h = Math.floor(minutes / 60);
       const m = minutes % 60;
@@ -77,7 +77,8 @@ createApp({
       this.submittedPlaces = [...valid];
 
       try {
-        const baseUrl = "https://routemyday.onrender.com";
+        const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.protocol === "file:";
+        const baseUrl = isLocal ? "http://localhost:8000" : "https://routemyday.onrender.com";
         const res = await fetch(`${baseUrl}/optimize`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },

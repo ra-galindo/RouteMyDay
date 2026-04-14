@@ -4,9 +4,11 @@ from pydantic import BaseModel
 
 class OptimizeRequest(BaseModel):
     places: List[str]
-    round_trip: bool = False
+    fixed_start: bool = False
+    fixed_end: bool = False
 
 
 class OptimizeResponse(BaseModel):
     order: List[int]
     total_distance_km: float
+    total_duration_min: float
