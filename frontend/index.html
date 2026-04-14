@@ -173,21 +173,21 @@
         <div class="info-num">1</div>
         <div>
           <div class="info-title">Real travel data</div>
-          <div class="info-body">Google Maps Distance Matrix API fetches actual driving times and distances between every pair of stops — not straight-line estimates.</div>
+          <div class="info-body">I use the Google Maps Distance Matrix API to fetch actual driving times and distances between every pair of stops, not straight-line estimates.</div>
         </div>
       </div>
       <div class="info-step">
         <div class="info-num">2</div>
         <div>
           <div class="info-title">TSP optimization</div>
-          <div class="info-body">For up to 9 stops, we use Held-Karp dynamic programming — an exact algorithm that guarantees the mathematically optimal route. For 10–15 stops, we use nearest-neighbour seeding followed by 2-opt local search, which finds a near-optimal solution in milliseconds. Both paths are tuned for fast response times.</div>
+          <div class="info-body">For up to 9 stops, I run Held-Karp dynamic programming, an exact algorithm that guarantees the mathematically optimal route. For 10 to 15 stops, I use nearest-neighbour seeding followed by 2-opt local search, finding a near-optimal solution in milliseconds. Both are tuned for fast response times.</div>
         </div>
       </div>
       <div class="info-step">
         <div class="info-num">3</div>
         <div>
           <div class="info-title">Constraint-aware</div>
-          <div class="info-body">Fixed start and end points are enforced throughout both algorithms — Held-Karp seeds only valid starting states, and 2-opt never crosses the pinned boundaries.</div>
+          <div class="info-body">Fixed start and end points are enforced throughout both algorithms. Held-Karp seeds only valid starting states, and 2-opt never crosses the pinned boundaries.</div>
         </div>
       </div>
     </div>
