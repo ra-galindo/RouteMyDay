@@ -561,6 +561,13 @@ body {
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+/* ── Motivation ──────────────────────────────────────────*/
+.motivation-text {
+  font-size: 14px;
+  color: #5a7089;
+  line-height: 1.7;
+}
+
 /* ── How it works ─────────────────────────────────────── */
 .info-steps {
   display: flex;
